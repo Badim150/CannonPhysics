@@ -11,7 +11,7 @@ public class cannon : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 
-        transform.rotation.Set(ball.transform.forward.x, 0, 0, 0);
+    //    transform.rotation.Set(ball.transform.forward.x, 0, 0, 0);
 
 	}
 }

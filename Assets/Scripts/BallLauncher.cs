@@ -9,29 +9,45 @@ public class BallLauncher : MonoBehaviour {
 
 	public float h = 25;
 	public float gravity = -18;
+    private Vector3 ballDefaultPos;
+    private Vector3 targetDefaultPos;
 
 	public bool debugPath;
     private bool isShooting = false;
+    private LineRenderer cannonLR;
+    private LineRenderer cannonLRGhost;
+    private Vector3[] line = new Vector3[2];
 
-	void Start() {
+
+    void Start() {
 		ball.useGravity = false;
-	}
+        cannonLR = cannon.GetComponentsInChildren<LineRenderer>()[0];
+        cannonLRGhost = cannon.GetComponentsInChildren<LineRenderer>()[1];
+        ballDefaultPos = ball.transform.position;
+        targetDefaultPos = target.transform.position;
+    }
 
 	void Update() {
 		if (Input.GetKeyDown (KeyCode.Space)) {
             isShooting = true;
 			Launch ();
-		}
+            StartCoroutine(ExecuteAfterTime(3));
+
+        }
 
 		if (debugPath && !isShooting) {
 			DrawPath ();
 		}
-	}
+
+        if(Input.GetKeyDown(KeyCode.R)) Application.LoadLevel(Application.loadedLevel);
+    }
 
 	void Launch() {
 		Physics.gravity = Vector3.up * gravity;
 		ball.useGravity = true;
 		ball.velocity = CalculateLaunchData ().initialVelocity;
+        cannonLRGhost.SetPositions(line);
+        cannonLRGhost.SetColors(Color.blue, Color.blue);
 	}
 
 	LaunchData CalculateLaunchData() {
@@ -63,7 +79,12 @@ public class BallLauncher : MonoBehaviour {
                 Vector3 newVector = drawPoint - firstPos;
 
                 var rotation = Quaternion.LookRotation(newVector); 
-                cannon.transform.rotation = Quaternion.Slerp(cannon.transform.rotation, rotation, Time.deltaTime);
+         //       cannon.transform.rotation = Quaternion.Slerp(cannon.transform.rotation, rotation, Time.deltaTime);
+
+                line[0] = ball.position;
+                line[1] = firstPos;
+                cannonLR.SetPositions(line);
+
             }
 		}
 	}
@@ -79,5 +100,18 @@ public class BallLauncher : MonoBehaviour {
 		}
 		
 	}
+
+
+    IEnumerator ExecuteAfterTime(float time)
+    {
+        yield return new WaitForSeconds(time);
+        ball.useGravity = false;
+        ball.velocity = Vector3.zero;
+        ball.transform.position = ballDefaultPos;
+        target.transform.position = targetDefaultPos;
+        h = 10;
+        print("Reset");
+        isShooting = false;
+    }
 }
 	
