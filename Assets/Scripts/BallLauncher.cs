@@ -6,14 +6,18 @@ public class BallLauncher : MonoBehaviour {
 	public Rigidbody ball;
 	public Transform target;
     public GameObject cannon;
+    public ProgressBar progressBar;
 
 	public float h = 25;
 	public float gravity = -18;
-    private Vector3 ballDefaultPos;
+    private Vector3 ballReset;
+    private Quaternion ballResetRot;
     private Vector3 targetDefaultPos;
+    private Quaternion cannonReset;
 
 	public bool debugPath;
-    private bool isShooting = false;
+    public bool isShooting = false;
+    private bool shootReady = false;
     private LineRenderer cannonLR;
     private LineRenderer cannonLRGhost;
     private Vector3[] line = new Vector3[2];
@@ -23,16 +27,27 @@ public class BallLauncher : MonoBehaviour {
 		ball.useGravity = false;
         cannonLR = cannon.GetComponentsInChildren<LineRenderer>()[0];
         cannonLRGhost = cannon.GetComponentsInChildren<LineRenderer>()[1];
-        ballDefaultPos = ball.transform.position;
+        ballReset = ball.transform.position;
+        ballResetRot = ball.transform.rotation;
         targetDefaultPos = target.transform.position;
+        cannonReset = cannon.transform.rotation;
     }
 
 	void Update() {
-		if (Input.GetKeyDown (KeyCode.Space)) {
-            isShooting = true;
-			Launch ();
-            StartCoroutine(ExecuteAfterTime(3));
+		if (Input.GetKey(KeyCode.Space) && !shootReady) {            
+            h += .2f;
+            progressBar.progress += .02f;
+            if (progressBar.progress >= 1)
+            {
+                shootReady = true;
+                Shoot();
+            }
+        }
 
+        if (Input.GetKeyUp(KeyCode.Space) && !shootReady)
+        {
+            shootReady = true;
+            Shoot();
         }
 
 		if (debugPath && !isShooting) {
@@ -42,12 +57,19 @@ public class BallLauncher : MonoBehaviour {
         if(Input.GetKeyDown(KeyCode.R)) Application.LoadLevel(Application.loadedLevel);
     }
 
+    void Shoot()
+    {
+        isShooting = true;
+        Launch();
+        StartCoroutine(ExecuteAfterTime(3));
+    }
+
 	void Launch() {
 		Physics.gravity = Vector3.up * gravity;
 		ball.useGravity = true;
 		ball.velocity = CalculateLaunchData ().initialVelocity;
         cannonLRGhost.SetPositions(line);
-        cannonLRGhost.SetColors(Color.blue, Color.blue);
+     //   cannonLRGhost.SetColors(Color.blue, Color.blue);
 	}
 
 	LaunchData CalculateLaunchData() {
@@ -79,10 +101,10 @@ public class BallLauncher : MonoBehaviour {
                 Vector3 newVector = drawPoint - firstPos;
 
                 var rotation = Quaternion.LookRotation(newVector); 
-         //       cannon.transform.rotation = Quaternion.Slerp(cannon.transform.rotation, rotation, Time.deltaTime);
+                cannon.transform.rotation = Quaternion.Slerp(cannon.transform.rotation, rotation, Time.deltaTime);
 
-                line[0] = ball.position;
-                line[1] = firstPos;
+                line[0] = firstPos;
+                line[1] = drawPoint;
                 cannonLR.SetPositions(line);
 
             }
@@ -107,11 +129,16 @@ public class BallLauncher : MonoBehaviour {
         yield return new WaitForSeconds(time);
         ball.useGravity = false;
         ball.velocity = Vector3.zero;
-        ball.transform.position = ballDefaultPos;
         target.transform.position = targetDefaultPos;
-        h = 10;
+        cannon.transform.rotation = cannonReset;
+        ball.transform.position = ballReset;
+        ball.transform.rotation = ballResetRot;
+        ball.GetComponent<Rigidbody>().angularVelocity = new Vector3(0, 0, 0);
+        h = 5;
         print("Reset");
         isShooting = false;
+        shootReady = false;
+        progressBar.progress = 0;
     }
 }
 	
